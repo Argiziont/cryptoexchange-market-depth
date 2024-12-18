@@ -9,6 +9,8 @@ interface OrderControlsProps {
   sellTotalCost: number | null;
   chartDepth: number | null;
   onSetChartDepth: (value: number) => void;
+  acquireTime: Date | undefined;
+  liquidityTime: Date | undefined;
 }
 
 const OrderControls: FC<OrderControlsProps> = ({
@@ -20,6 +22,8 @@ const OrderControls: FC<OrderControlsProps> = ({
   sellTotalCost,
   chartDepth,
   onSetChartDepth,
+  acquireTime,
+  liquidityTime,
 }) => {
   const buyAverage =
     buyTotalCost !== null && buyBtc > 0 ? buyTotalCost / buyBtc : null;
@@ -92,6 +96,12 @@ const OrderControls: FC<OrderControlsProps> = ({
             Not enough liquidity to fulfill sell order.
           </p>
         ) : null}
+        <div style={{ marginTop: "20px" }}>
+          {acquireTime && <p>Acquire Time: {acquireTime.toLocaleString()}</p>}
+          {liquidityTime && (
+            <p>Liquidity Time: {liquidityTime.toLocaleString()}</p>
+          )}
+        </div>
       </div>
     </div>
   );

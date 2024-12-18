@@ -1,8 +1,6 @@
-export type RawApiOrder = [string, string];
-
-export interface ApiOrder {
+export interface RawApiOrder {
   price: number;
-  quantity: number;
+  amount: number;
 }
 
 export interface OrderBookData {
@@ -17,9 +15,20 @@ export interface DepthDataPoint {
   bidsDepth?: number;
   asksDepth?: number;
 }
+export interface RawData {
+  acquiredAt: Date;
+  timestamp: Date;
+
+  bids: RawApiOrder[] | undefined;
+  asks: RawApiOrder[] | undefined;
+}
 
 export interface DepthChartProps {
   data: DepthDataPoint[];
   buyReferencePrice?: number;
   sellReferencePrice?: number;
+}
+
+export interface ComputedMarketDepthResult {
+  data: DepthDataPoint[];
 }
