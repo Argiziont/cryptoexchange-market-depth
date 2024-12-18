@@ -1,38 +1,35 @@
 using CryptoexchangeMarketDepth.Clients.Integrations;
 using CryptoexchangeMarketDepth.Context;
+using CryptoexchangeMarketDepth.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.SignalR; // Modern SignalR namespace for ASP.NET Core
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
 builder.Services.AddControllers();
 
-// Configure Bitstamp API options
-builder.Services.Configure<BitstampApiOptions>(
-    builder.Configuration.GetSection("BitstampApi"));
+builder.Services.Configure<BitstampApiOptions>(builder.Configuration.GetSection("BitstampApi"));
+builder.Services.Configure<FetcherServiceOptions>(builder.Configuration.GetSection("FetcherService"));
 
-// Register HttpClient for Bitstamp API
 builder.Services.AddHttpClient<BitstampApiClient>((serviceProvider, client) =>
 {
     var options = serviceProvider.GetRequiredService<IOptions<BitstampApiOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
 });
 
-// Register EF Core with LocalDB
 builder.Services.AddDbContext<OrderBookDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Register Background Service
-//builder.Services.AddHostedService<OrderBookWorker>();
+builder.Services.AddHostedService<DataFetcherService>();
+builder.Services.AddHostedService<DataPrunerService>();
 
-// Add Swagger and Endpoints
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -42,5 +39,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
 
 app.Run();

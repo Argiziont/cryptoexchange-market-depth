@@ -1,0 +1,20 @@
+﻿{
+   "ConnectionStringName": "dab-connection-string",
+   "Dacpac": null,
+   "DatabaseType": 3,
+   "ProjectPath": "C:\\Users\\Argiziont\\source\\repos\\cryptoexchange-market-depth\\market-depth-api\\cryptoexchange-market-depth",
+   "Tables": [
+      {
+         "Name": "[dbo].[Asks]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Bids]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Snapshots]",
+         "ObjectType": 0
+      }
+   ]
+}
