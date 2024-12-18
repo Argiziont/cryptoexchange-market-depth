@@ -1,4 +1,4 @@
-﻿namespace CryptoexchangeMarketDepth.Services
+﻿namespace CryptoexchangeMarketDepth.Services.Options
 {
     public class FetcherServiceOptions
     {

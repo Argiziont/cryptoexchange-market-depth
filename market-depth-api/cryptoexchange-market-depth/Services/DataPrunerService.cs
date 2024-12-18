@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using CryptoexchangeMarketDepth.Services.Options;
 
 namespace CryptoexchangeMarketDepth.Services
 {
@@ -30,7 +31,7 @@ namespace CryptoexchangeMarketDepth.Services
             using var scope = _serviceProvider.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<OrderBookDbContext>();
 
-            var cutoff = DateTime.UtcNow.AddMinutes(-1 * _options.DataLiveTime);
+            var cutoff = DateTime.UtcNow.AddSeconds(-1 * _options.DataLiveTime);
             var oldSnapshots = dbContext.Snapshots.Where(s => s.AcquiredAt < cutoff);
 
             dbContext.Snapshots.RemoveRange(oldSnapshots);

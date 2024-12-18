@@ -1,10 +1,13 @@
 ﻿using CryptoexchangeMarketDepth.Clients.Integrations;
 using CryptoexchangeMarketDepth.Context;
 using CryptoexchangeMarketDepth.Models;
+using CryptoexchangeMarketDepth.Services.Models;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using CryptoexchangeMarketDepth.Services.Options;
+using Microsoft.EntityFrameworkCore;
 
 namespace CryptoexchangeMarketDepth.Services
 {
@@ -35,6 +38,8 @@ namespace CryptoexchangeMarketDepth.Services
             using var scope = _serviceProvider.CreateScope();
             var bitstampClient = scope.ServiceProvider.GetRequiredService<BitstampApiClient>();
             var dbContext = scope.ServiceProvider.GetRequiredService<OrderBookDbContext>();
+            var computer = scope.ServiceProvider.GetRequiredService<MarketDepthComputer>();
+            var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<MarketDepthHub>>();
 
             try
             {
@@ -53,6 +58,19 @@ namespace CryptoexchangeMarketDepth.Services
 
                     dbContext.Snapshots.Add(snapshot);
                     await dbContext.SaveChangesAsync();
+
+                    var computedData = await computer.ComputeMarketDepthAsync();
+                    var rawData = new RawData()
+                    {
+                        Asks = snapshot.Asks.Select(x => new RawApiOrder() { Price = x.Price, Amount = x.Amount }).ToList(),
+                        Bids = snapshot.Bids.Select(x => new RawApiOrder() { Price = x.Price, Amount = x.Amount }).ToList(),
+                        Timestamp = snapshot.Timestamp,
+                        AcquiredAt = snapshot.AcquiredAt
+                    };
+
+                    // Broadcast to all connected clients
+                    await hubContext.Clients.All.SendAsync("UpdateDepthData", computedData);
+                    await hubContext.Clients.All.SendAsync("UpdateRawData", rawData);
                 }
             }
             catch (Exception ex)
