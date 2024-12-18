@@ -16,6 +16,10 @@ namespace CryptoexchangeMarketDepth.Context
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<OrderBookSnapshot>()
+                .HasIndex(s => s.AcquiredAt)
+                .HasDatabaseName("IX_Snapshots_AcquiredAt");
+
             modelBuilder.Entity<Bid>()
                 .HasOne(b => b.Snapshot)
                 .WithMany(s => s.Bids)

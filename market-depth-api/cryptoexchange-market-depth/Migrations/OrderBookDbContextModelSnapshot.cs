@@ -97,6 +97,9 @@ namespace CryptoexchangeMarketDepth.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AcquiredAt")
+                        .HasDatabaseName("IX_Snapshots_AcquiredAt");
+
                     b.ToTable("Snapshots");
                 });
 
