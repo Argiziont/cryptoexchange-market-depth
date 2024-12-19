@@ -37,6 +37,7 @@ builder.Services.AddHostedService<DataFetcherService>();
 builder.Services.AddHostedService<DataPrunerService>();
 
 builder.Services.AddScoped<MarketDepthComputer>();
+builder.Services.AddScoped<IBitstampApiClient, BitstampApiClient>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

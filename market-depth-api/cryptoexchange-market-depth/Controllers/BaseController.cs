@@ -1,5 +1,11 @@
+// CryptoexchangeMarketDepth/Controllers/BaseController.cs
 using CryptoexchangeMarketDepth.Clients.Integrations;
+using CryptoexchangeMarketDepth.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
+using ErrorResponse = CryptoexchangeMarketDepth.Models.ErrorResponse;
 
 namespace CryptoexchangeMarketDepth.Controllers
 {
@@ -7,11 +13,10 @@ namespace CryptoexchangeMarketDepth.Controllers
     [Route("[controller]")]
     public class BaseController : ControllerBase
     {
-
         private readonly ILogger<BaseController> _logger;
-        private readonly BitstampApiClient _bitstampClient;
+        private readonly IBitstampApiClient _bitstampClient;
 
-        public BaseController(ILogger<BaseController> logger, BitstampApiClient bitstampClient)
+        public BaseController(ILogger<BaseController> logger, IBitstampApiClient bitstampClient)
         {
             _logger = logger;
             _bitstampClient = bitstampClient;
@@ -27,7 +32,7 @@ namespace CryptoexchangeMarketDepth.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.Message });
+                return BadRequest(new ErrorResponse { Message = ex.Message });
             }
         }
     }

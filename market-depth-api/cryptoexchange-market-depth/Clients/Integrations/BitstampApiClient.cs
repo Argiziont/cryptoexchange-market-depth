@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace CryptoexchangeMarketDepth.Clients.Integrations
 {
-    public class BitstampApiClient
+    public class BitstampApiClient: IBitstampApiClient
     {
 
         private readonly HttpClient _httpClient;
