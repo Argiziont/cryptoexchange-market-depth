@@ -3,9 +3,7 @@ using CryptoexchangeMarketDepth.Context;
 using CryptoexchangeMarketDepth.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.SignalR;
-using CryptoexchangeMarketDepth.Services.Options; // Modern SignalR namespace for ASP.NET Core
+using CryptoexchangeMarketDepth.Services.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
