@@ -66,7 +66,7 @@ const App: React.FC = () => {
         style={{
           display: "flex",
           flexDirection: "row",
-          width: "200 0px",
+          width: "2000px",
           height: "890px",
           border: "1px solid #ddd",
           borderRadius: "8px",
