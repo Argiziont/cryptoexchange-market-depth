@@ -1,45 +1,42 @@
 ﻿using CryptoexchangeMarketDepth.Clients.Integrations;
 using CryptoexchangeMarketDepth.Context;
 using CryptoexchangeMarketDepth.Models;
+using CryptoexchangeMarketDepth.Services.Interfaces;
 using CryptoexchangeMarketDepth.Services.Models;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using CryptoexchangeMarketDepth.Services.Options;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace CryptoexchangeMarketDepth.Services
 {
-    public class DataFetcherService : BackgroundService
+    public class DataFetcher : IDataFetcher
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<DataFetcherService> _logger;
+        private readonly ILogger<DataFetcher> _logger;
         private readonly FetcherServiceOptions _options;
+        private readonly IMarketDepthService _marketDepthService;
+        private readonly IHubContext<MarketDepthHub> _hubContext;
 
-        public DataFetcherService(IServiceProvider serviceProvider, ILogger<DataFetcherService> logger, IOptions<FetcherServiceOptions> options)
+        public DataFetcher(
+            IServiceProvider serviceProvider,
+            ILogger<DataFetcher> logger,
+            IOptions<FetcherServiceOptions> options,
+            IMarketDepthService marketDepthService,
+            IHubContext<MarketDepthHub> hubContext)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
             _options = options.Value;
+            _marketDepthService = marketDepthService;
+            _hubContext = hubContext;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                await FetchAndStoreDataAsync();
-                await Task.Delay(TimeSpan.FromSeconds(_options.FetchDelay), stoppingToken);
-            }
-        }
-
-        private async Task FetchAndStoreDataAsync()
+        public async Task FetchAndStoreDataAsync()
         {
             using var scope = _serviceProvider.CreateScope();
-            var bitstampClient = scope.ServiceProvider.GetRequiredService<BitstampApiClient>();
+            var bitstampClient = scope.ServiceProvider.GetRequiredService<IBitstampApiClient>();
             var dbContext = scope.ServiceProvider.GetRequiredService<OrderBookDbContext>();
-            var computer = scope.ServiceProvider.GetRequiredService<MarketDepthComputer>();
-            var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<MarketDepthHub>>();
 
             try
             {
@@ -55,22 +52,33 @@ namespace CryptoexchangeMarketDepth.Services
                         Bids = response.Bids.Select(b => new Bid { Price = b[0], Amount = b[1] }).ToList(),
                         Asks = response.Asks.Select(a => new Ask { Price = a[0], Amount = a[1] }).ToList()
                     };
-
                     dbContext.Snapshots.Add(snapshot);
                     await dbContext.SaveChangesAsync();
 
-                    var computedData = await computer.ComputeMarketDepthAsync();
-                    var rawData = new RawData()
+                    var lastSnapshots = await dbContext.Snapshots
+                        .OrderByDescending(s => s.AcquiredAt)
+                        .Take(10)
+                        .Select(s => new Snapshot
+                        {
+                            Id = s.Id,
+                            AcquiredAt = s.AcquiredAt,
+                            Timestamp = s.Timestamp
+                        }).ToListAsync();
+
+                    var computedData = await _marketDepthService.ComputeMarketDepthAsync();
+
+                    var rawData = new RawData
                     {
-                        Asks = snapshot.Asks.Select(x => new RawApiOrder() { Price = x.Price, Amount = x.Amount }).ToList(),
-                        Bids = snapshot.Bids.Select(x => new RawApiOrder() { Price = x.Price, Amount = x.Amount }).ToList(),
+                        Asks = snapshot.Asks.Select(x => new RawApiOrder { Price = x.Price, Amount = x.Amount }).ToList(),
+                        Bids = snapshot.Bids.Select(x => new RawApiOrder { Price = x.Price, Amount = x.Amount }).ToList(),
                         Timestamp = snapshot.Timestamp,
                         AcquiredAt = snapshot.AcquiredAt
                     };
 
                     // Broadcast to all connected clients
-                    await hubContext.Clients.All.SendAsync("UpdateDepthData", computedData);
-                    await hubContext.Clients.All.SendAsync("UpdateRawData", rawData);
+                    await _hubContext.Clients.All.SendAsync("UpdateDepthData", computedData);
+                    await _hubContext.Clients.All.SendAsync("UpdateRawData", rawData);
+                    await _hubContext.Clients.All.SendAsync("ReceiveLastSnapshots", lastSnapshots);
                 }
             }
             catch (Exception ex)

@@ -1,6 +1,4 @@
-﻿using CryptoexchangeMarketDepth.Models;
-
-namespace CryptoexchangeMarketDepth.Clients.Integrations
+﻿namespace CryptoexchangeMarketDepth.Clients.Integrations
 {
     public interface IBitstampApiClient
     {

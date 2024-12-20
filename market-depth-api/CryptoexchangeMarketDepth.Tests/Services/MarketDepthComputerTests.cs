@@ -1,125 +1,133 @@
 ﻿using CryptoexchangeMarketDepth.Context;
 using CryptoexchangeMarketDepth.Models;
 using CryptoexchangeMarketDepth.Services;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Xunit;
+using Moq;
+using CryptoexchangeMarketDepth.Services.Models;
 
 namespace CryptoexchangeMarketDepth.Tests.Services
 {
-    public class MarketDepthComputerTests : IDisposable
+    public class MarketDepthHubTests : IDisposable
     {
         private readonly OrderBookDbContext _dbContext;
-        private readonly MarketDepthComputer _computer;
+        private readonly MarketDepthHub _hub;
+        private readonly Mock<HubCallerContext> _mockContext;
+        private readonly Mock<ISingleClientProxy> _mockClientProxy;
+        private readonly Mock<IHubCallerClients> _mockClients;
 
-        public MarketDepthComputerTests()
+        public MarketDepthHubTests()
         {
             var options = new DbContextOptionsBuilder<OrderBookDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
-
             _dbContext = new OrderBookDbContext(options);
-
-            // Seed the in-memory database with test data
             SeedDatabase();
 
-            _computer = new MarketDepthComputer(_dbContext);
+            _hub = new MarketDepthHub(_dbContext);
+
+            _mockContext = new Mock<HubCallerContext>();
+            _hub.Context = _mockContext.Object;
+
+            _mockClientProxy = new Mock<ISingleClientProxy>();
+            _mockClients = new Mock<IHubCallerClients>();
+            _mockClients.Setup(clients => clients.Caller).Returns(_mockClientProxy.Object);
+            _hub.Clients = _mockClients.Object;
         }
 
         private void SeedDatabase()
         {
-            var snapshot = new OrderBookSnapshot
+            var snapshots = new List<OrderBookSnapshot>
             {
-                Id = 1,
-                MarketSymbol = "btceur",
-                AcquiredAt = DateTime.UtcNow,
-                Timestamp = DateTime.UtcNow,
-                Microtimestamp = DateTime.UtcNow,
-                Bids = new List<Bid>
+                new OrderBookSnapshot
                 {
-                    new Bid { Id = 1, Price = "50000", Amount = "0.1", OrderBookSnapshotId = 1 },
-                    new Bid { Id = 2, Price = "49900", Amount = "0.2", OrderBookSnapshotId = 1 },
-                    new Bid { Id = 3, Price = "49800", Amount = "0.3", OrderBookSnapshotId = 1 }
+                    Id = 1,
+                    MarketSymbol = "btceur",
+                    AcquiredAt = DateTime.UtcNow.AddMinutes(-15),
+                    Timestamp = DateTime.UtcNow.AddMinutes(-15),
+                    Microtimestamp = DateTime.UtcNow.AddMinutes(-15),
+                    Bids = new List<Bid>
+                    {
+                        new Bid { Id = 1, Price = "50000", Amount = "0.1", OrderBookSnapshotId = 1 },
+                        new Bid { Id = 2, Price = "49900", Amount = "0.2", OrderBookSnapshotId = 1 }
+                    },
+                    Asks = new List<Ask>
+                    {
+                        new Ask { Id = 3, Price = "50100", Amount = "0.1", OrderBookSnapshotId = 1 },
+                        new Ask { Id = 4, Price = "50200", Amount = "0.2", OrderBookSnapshotId = 1 }
+                    }
                 },
-                Asks = new List<Ask>
+                new OrderBookSnapshot
                 {
-                    new Ask { Id = 4, Price = "50100", Amount = "0.1", OrderBookSnapshotId = 1 },
-                    new Ask { Id = 5, Price = "50200", Amount = "0.2", OrderBookSnapshotId = 1 },
-                    new Ask { Id = 6, Price = "50300", Amount = "0.3", OrderBookSnapshotId = 1 }
-                }
+                    Id = 2,
+                    MarketSymbol = "btceur",
+                    AcquiredAt = DateTime.UtcNow.AddMinutes(-14),
+                    Timestamp = DateTime.UtcNow.AddMinutes(-14),
+                    Microtimestamp = DateTime.UtcNow.AddMinutes(-14),
+                    Bids = new List<Bid>
+                    {
+                        new Bid { Id = 5, Price = "50010", Amount = "0.15", OrderBookSnapshotId = 2 },
+                        new Bid { Id = 6, Price = "49910", Amount = "0.25", OrderBookSnapshotId = 2 }
+                    },
+                    Asks = new List<Ask>
+                    {
+                        new Ask { Id = 7, Price = "50110", Amount = "0.15", OrderBookSnapshotId = 2 },
+                        new Ask { Id = 8, Price = "50210", Amount = "0.25", OrderBookSnapshotId = 2 }
+                    }
+                },
             };
 
-            _dbContext.Snapshots.Add(snapshot);
+            for (int i = 3; i <= 15; i++)
+            {
+                snapshots.Add(new OrderBookSnapshot
+                {
+                    Id = i,
+                    MarketSymbol = "btceur",
+                    AcquiredAt = DateTime.UtcNow.AddMinutes(-15 + i),
+                    Timestamp = DateTime.UtcNow.AddMinutes(-15 + i),
+                    Microtimestamp = DateTime.UtcNow.AddMinutes(-15 + i),
+                    Bids = new List<Bid>
+                    {
+                        new Bid { Id = i * 2 + 1, Price = (50000 + i).ToString(), Amount = (0.1 + i * 0.01).ToString(), OrderBookSnapshotId = i },
+                        new Bid { Id = i * 2 + 2, Price = (49900 + i).ToString(), Amount = (0.2 + i * 0.01).ToString(), OrderBookSnapshotId = i }
+                    },
+                    Asks = new List<Ask>
+                    {
+                        new Ask { Id = i * 2 + 3, Price = (50100 + i).ToString(), Amount = (0.1 + i * 0.01).ToString(), OrderBookSnapshotId = i },
+                        new Ask { Id = i * 2 + 4, Price = (50200 + i).ToString(), Amount = (0.2 + i * 0.01).ToString(), OrderBookSnapshotId = i }
+                    }
+                });
+            }
+
+            _dbContext.Snapshots.AddRange(snapshots);
             _dbContext.SaveChanges();
         }
 
         [Fact]
-        public async Task ComputeMarketDepthAsync_ReturnsCorrectDepth()
+        public async Task GetLastSnapshotsAsync_ReturnsLastTenSnapshots()
         {
             // Act
-            var result = await _computer.ComputeMarketDepthAsync();
+            var lastSnapshots = await _hub.GetLastSnapshotsAsync();
 
             // Assert
-            Assert.NotNull(result);
-            Assert.NotEmpty(result.Data);
-
-            var data = result.Data;
-
-            // Check bid depths
-            var bid50000 = data.Find(p => p.Price == 50000);
-            Assert.NotNull(bid50000);
-            Assert.True(bid50000.BidsDepth.HasValue, "BidsDepth for price 50000 should have a value.");
-            Assert.Equal(0.1, bid50000.BidsDepth.Value, 5);
-            Assert.Null(bid50000.AsksDepth);
-
-            var bid49900 = data.Find(p => p.Price == 49900);
-            Assert.NotNull(bid49900);
-            Assert.True(bid49900.BidsDepth.HasValue, "BidsDepth for price 49900 should have a value.");
-            Assert.Equal(0.3, bid49900.BidsDepth.Value, 5);
-            Assert.Null(bid49900.AsksDepth);
-
-            var bid49800 = data.Find(p => p.Price == 49800);
-            Assert.NotNull(bid49800);
-            Assert.True(bid49800.BidsDepth.HasValue, "BidsDepth for price 49800 should have a value.");
-            Assert.Equal(0.6, bid49800.BidsDepth.Value, 5);
-            Assert.Null(bid49800.AsksDepth);
-
-            // Check ask depths
-            var ask50100 = data.Find(p => p.Price == 50100);
-            Assert.NotNull(ask50100);
-            Assert.Null(ask50100.BidsDepth);
-            Assert.True(ask50100.AsksDepth.HasValue, "AsksDepth for price 50100 should have a value.");
-            Assert.Equal(0.1, ask50100.AsksDepth.Value, 5);
-
-            var ask50200 = data.Find(p => p.Price == 50200);
-            Assert.NotNull(ask50200);
-            Assert.Null(ask50200.BidsDepth);
-            Assert.True(ask50200.AsksDepth.HasValue, "AsksDepth for price 50200 should have a value.");
-            Assert.Equal(0.3, ask50200.AsksDepth.Value, 5);
-
-            var ask50300 = data.Find(p => p.Price == 50300);
-            Assert.NotNull(ask50300);
-            Assert.Null(ask50300.BidsDepth);
-            Assert.True(ask50300.AsksDepth.HasValue, "AsksDepth for price 50300 should have a value.");
-            Assert.Equal(0.6, ask50300.AsksDepth.Value, 5);
+            Assert.Equal(10, lastSnapshots.Count);
+            Assert.Equal(15, lastSnapshots[0].Id);
+            Assert.Equal(6, lastSnapshots[9].Id);
         }
 
         [Fact]
-        public async Task ComputeMarketDepthAsync_ReturnsEmptyResult_WhenNoSnapshots()
+        public async Task OnConnectedAsync_SendsLastSnapshots()
         {
-            // Arrange
-            // Clear the database
-            _dbContext.Snapshots.RemoveRange(_dbContext.Snapshots);
-            _dbContext.SaveChanges();
-
             // Act
-            var result = await _computer.ComputeMarketDepthAsync();
+            await _hub.OnConnectedAsync();
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Empty(result.Data);
+            _mockClientProxy.Verify(
+                clientProxy => clientProxy.SendCoreAsync(
+                    "ReceiveLastSnapshots",
+                    It.Is<object[]>(o => o != null && o.Length == 1 && o[0] is List<Snapshot>),
+                    default),
+                Times.Once);
         }
 
         public void Dispose()

@@ -1,6 +1,4 @@
-﻿using CryptoexchangeMarketDepth.Models;
-
-namespace CryptoexchangeMarketDepth.Services.Models
+﻿namespace CryptoexchangeMarketDepth.Services.Models
 {
     public class RawData
     {

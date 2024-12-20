@@ -1,13 +1,8 @@
 ﻿using CryptoexchangeMarketDepth.Clients.Integrations;
 using CryptoexchangeMarketDepth.Controllers;
-using CryptoexchangeMarketDepth.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Xunit;
 using ErrorResponse = CryptoexchangeMarketDepth.Models.ErrorResponse;
 
 namespace CryptoexchangeMarketDepth.Tests.Controllers

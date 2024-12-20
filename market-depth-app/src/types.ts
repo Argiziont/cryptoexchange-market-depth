@@ -32,3 +32,10 @@ export interface DepthChartProps {
 export interface ComputedMarketDepthResult {
   data: DepthDataPoint[];
 }
+
+export interface Snapshot {
+  id: number;
+  acquiredAt: Date;
+  timestamp: Date;
+  microtimestamp: Date;
+}

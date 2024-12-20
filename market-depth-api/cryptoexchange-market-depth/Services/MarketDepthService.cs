@@ -1,21 +1,20 @@
 ﻿using CryptoexchangeMarketDepth.Context;
-using CryptoexchangeMarketDepth.Models;
+using CryptoexchangeMarketDepth.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace CryptoexchangeMarketDepth.Services
 {
-    public class MarketDepthComputer
+    public class MarketDepthService : IMarketDepthService
     {
         private readonly OrderBookDbContext _dbContext;
-        private readonly IDbContextFactory<OrderBookDbContext> _dbContextFactory;
 
-        public MarketDepthComputer(OrderBookDbContext dbContext)
+        public MarketDepthService(OrderBookDbContext dbContext)
         {
             _dbContext = dbContext;
         }
 
         public async Task<ComputedMarketDepthResult> ComputeMarketDepthAsync()
-        {   
+        {
             var latestSnapshotId = await _dbContext.Snapshots
                 .OrderByDescending(s => s.AcquiredAt)
                 .Select(s => s.Id)
@@ -35,7 +34,6 @@ namespace CryptoexchangeMarketDepth.Services
                 .Where(a => a.OrderBookSnapshotId == latestSnapshotId)
                 .Select(a => new[] { a.Price.ToString(), a.Amount.ToString() })
                 .ToListAsync();
-
 
             return ComputeDepthChartData(bids, asks);
         }
@@ -71,7 +69,6 @@ namespace CryptoexchangeMarketDepth.Services
                 return new DepthChartPoint { Price = a.Price, AsksDepth = cumulative };
             }).ToList();
 
-            // Merge bids and asks by price
             var allPrices = new HashSet<double>(bidsDepth.Select(b => b.Price).Concat(asksDepth.Select(a => a.Price)));
             var merged = allPrices.Select(price =>
             {
@@ -85,23 +82,10 @@ namespace CryptoexchangeMarketDepth.Services
                 };
             }).OrderBy(p => p.Price).ToList();
 
-            return new ComputedMarketDepthResult { Data = merged };
+            return new ComputedMarketDepthResult
+            {
+                Data = merged
+            };
         }
-        //Data trim logic removed as this exists on UI
-        // Compute midPrice from best bid and best ask
-        //double bestBid = bidsDepth.Count > 0 ? bidsDepth.Max(b => b.Price) : 0;
-        //double bestAsk = asksDepth.Count > 0 ? asksDepth.Min(a => a.Price) : 0;
-        //    if (bestBid == 0 || bestAsk == 0)
-        //{
-        //    // If no valid data, return what we have (could be empty)
-        //    return new ComputedMarketDepthResult { Data = merged
-        //    };
-        //}
-        //double midPrice = (bestBid + bestAsk) / 2.0;
-        //double rangePercent = 0.05; // 5% range
-        //double lowerBound = midPrice * (1 - rangePercent);
-        //double upperBound = midPrice * (1 + rangePercent);
-
-        //var trimmed = merged.Where(p => p.Price >= lowerBound && p.Price <= upperBound).ToList();
     }
 }

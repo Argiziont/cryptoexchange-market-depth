@@ -24,10 +24,8 @@ namespace CryptoexchangeMarketDepth.Clients.Integrations
         /// <returns>OrderBookResponse object.</returns>
         public async Task<OrderBookResponse?> GetOrderBookAsync(string marketSymbol)
         {
-            // Construct URL with query parameters
             var url = $"/api/v2/order_book/{marketSymbol}/?group=0";
 
-            // Make the GET request
             var response = await _httpClient.GetAsync(url);
 
             if (response.IsSuccessStatusCode)
@@ -52,7 +50,6 @@ namespace CryptoexchangeMarketDepth.Clients.Integrations
         }
     }
 
-    // OrderBook Response Model
     public class OrderBookResponse
     {
         public List<List<string>> Asks { get; set; } = new();
@@ -61,7 +58,6 @@ namespace CryptoexchangeMarketDepth.Clients.Integrations
         public string Timestamp { get; set; } = string.Empty;
     }
 
-    // Error Response Model
     public class ErrorResponse
     {
         public string Reason { get; set; } = string.Empty;

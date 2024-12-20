@@ -1,18 +1,20 @@
 using CryptoexchangeMarketDepth.Clients.Integrations;
 using CryptoexchangeMarketDepth.Context;
 using CryptoexchangeMarketDepth.Services;
+using CryptoexchangeMarketDepth.Services.Hosted;
+using CryptoexchangeMarketDepth.Services.Interfaces;
+using CryptoexchangeMarketDepth.Services.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using CryptoexchangeMarketDepth.Services.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add services to the container.
 builder.Services.AddControllers();
-
 builder.Services.Configure<BitstampApiOptions>(builder.Configuration.GetSection("BitstampApi"));
 builder.Services.Configure<FetcherServiceOptions>(builder.Configuration.GetSection("FetcherService"));
 
-builder.Services.AddHttpClient<BitstampApiClient>((serviceProvider, client) =>
+builder.Services.AddHttpClient<IBitstampApiClient, BitstampApiClient>((serviceProvider, client) =>
 {
     var options = serviceProvider.GetRequiredService<IOptions<BitstampApiOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
@@ -23,27 +25,32 @@ builder.Services.AddDbContext<OrderBookDbContext>(options =>
 
 builder.Services.AddSignalR();
 
+// CORS configuration
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("CorsPolicy",
-        builder => builder
+    options.AddPolicy("CorsPolicy", builder =>
+        builder
             .AllowAnyMethod()
             .AllowCredentials()
             .SetIsOriginAllowed((host) => true)
             .AllowAnyHeader());
 });
 
-builder.Services.AddHostedService<DataFetcherService>();
-builder.Services.AddHostedService<DataPrunerService>();
+// Register dedicated services as Scoped
+builder.Services.AddScoped<IMarketDepthService, MarketDepthService>();
+builder.Services.AddScoped<IDataFetcher, DataFetcher>();
+builder.Services.AddScoped<IDataPruner, DataPruner>();
 
-builder.Services.AddScoped<MarketDepthComputer>();
-builder.Services.AddScoped<IBitstampApiClient, BitstampApiClient>();
+// Register hosted services
+builder.Services.AddHostedService<DataFetcherHostedService>();
+builder.Services.AddHostedService<DataPrunerHostedService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Middleware configuration
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -52,12 +59,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
-app.MapControllers();
-
 app.UseCors("CorsPolicy");
 
 // Map the SignalR Hub endpoint
 app.MapHub<MarketDepthHub>("/marketdepthhub");
-
+app.MapControllers();
 
 app.Run();

@@ -1,10 +1,5 @@
-// CryptoexchangeMarketDepth/Controllers/BaseController.cs
 using CryptoexchangeMarketDepth.Clients.Integrations;
-using CryptoexchangeMarketDepth.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Threading.Tasks;
 using ErrorResponse = CryptoexchangeMarketDepth.Models.ErrorResponse;
 
 namespace CryptoexchangeMarketDepth.Controllers
