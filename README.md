@@ -1,5 +1,5 @@
 "# cryptoexchange-market-depth" 
-![image](https://github.com/user-attachments/assets/90e90767-4556-40a1-bcbb-89272ba1041b)
+![image](https://github.com/user-attachments/assets/05a6d7fc-1dba-45cb-908b-4f5ff09509ce)
 
 To run project
 1. Go to `.\market-depth-api\cryptoexchange-market-depth\appsettings.json` and update connection string
