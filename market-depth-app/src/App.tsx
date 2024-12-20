@@ -24,8 +24,6 @@ const App: React.FC = () => {
     connection
       .start()
       .then(() => {
-        console.log("Connected to MarketDepthHub");
-
         // Receive real-time updates
         connection.on("UpdateDepthData", (data: ComputedMarketDepthResult) => {
           setDepthData(data.data);
@@ -43,7 +41,6 @@ const App: React.FC = () => {
               new Date(a.acquiredAt).getTime()
           );
           setLastSnapshots(sortedSnapshots);
-          console.log(sortedSnapshots);
         });
       })
       .catch((err) => console.error("Connection failed: ", err));
@@ -69,7 +66,7 @@ const App: React.FC = () => {
         style={{
           display: "flex",
           flexDirection: "row",
-          width: "2000px",
+          width: "200 0px",
           height: "890px",
           border: "1px solid #ddd",
           borderRadius: "8px",
