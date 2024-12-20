@@ -14,10 +14,12 @@ const App: React.FC = () => {
   const [rawData, setRawData] = React.useState<RawData>();
   const [lastSnapshots, setLastSnapshots] = React.useState<Snapshot[]>([]);
 
+  const hubUrl = import.meta.env.VITE_APP_SIGNALR_HUB_URL;
+
   React.useEffect(() => {
     // Connect to the SignalR hub
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl("https://localhost:7275/marketdepthhub")
+      .withUrl(hubUrl)
       .withAutomaticReconnect()
       .build();
 
@@ -48,7 +50,7 @@ const App: React.FC = () => {
     return () => {
       connection.stop();
     };
-  }, []);
+  }, [hubUrl]);
 
   return (
     <div
