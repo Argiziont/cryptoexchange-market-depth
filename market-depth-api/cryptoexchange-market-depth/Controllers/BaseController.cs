@@ -2,7 +2,7 @@ using CryptoexchangeMarketDepth.Infrastructure.ExternalServices.Integrations;
 using Microsoft.AspNetCore.Mvc;
 using ErrorResponse = CryptoexchangeMarketDepth.Shared.ErrorResponse;
 
-namespace CryptoexchangeMarketDepth.Api.Controllers
+namespace CryptoexchangeMarketDepth.Controllers
 {
     [ApiController]
     [Route("[controller]")]

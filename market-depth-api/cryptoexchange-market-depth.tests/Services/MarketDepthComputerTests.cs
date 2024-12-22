@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Moq;
-using CryptoexchangeMarketDepth.Api.Hubs;
 using CryptoexchangeMarketDepth.Application.DTOs;
 using CryptoexchangeMarketDepth.Infrastructure.Persistence;
 using CryptoexchangeMarketDepth.Shared;
+using CryptoexchangeMarketDepth.Hubs;
 
 namespace CryptoexchangeMarketDepth.Tests.Services
 {

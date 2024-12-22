@@ -3,7 +3,7 @@ using CryptoexchangeMarketDepth.Infrastructure.Persistence;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
-namespace CryptoexchangeMarketDepth.Api.Hubs
+namespace CryptoexchangeMarketDepth.Hubs
 {
     public class MarketDepthHub : Hub
     {

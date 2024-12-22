@@ -1,4 +1,4 @@
-﻿using CryptoexchangeMarketDepth.Api.Controllers;
+﻿using CryptoexchangeMarketDepth.Controllers;
 using CryptoexchangeMarketDepth.Infrastructure.ExternalServices.Integrations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;

@@ -1,7 +1,7 @@
-﻿using CryptoexchangeMarketDepth.Api.Hubs;
-using CryptoexchangeMarketDepth.Application.DTOs;
+﻿using CryptoexchangeMarketDepth.Application.DTOs;
 using CryptoexchangeMarketDepth.Application.Interfaces;
 using CryptoexchangeMarketDepth.Application.Options;
+using CryptoexchangeMarketDepth.Hubs;
 using CryptoexchangeMarketDepth.Infrastructure.ExternalServices.Integrations;
 using CryptoexchangeMarketDepth.Infrastructure.Persistence;
 using CryptoexchangeMarketDepth.Shared;
